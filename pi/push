@@ -1,0 +1,14 @@
+#/bin/bash
+# --- a|b
+ps ax | grep $$
+set -e
+if [[ "$1" == 'a' || "$1" == 'b' ]]; then
+    host=alison$1.local
+else
+    echo "need a|b"
+    exit 1
+fi
+
+set -x
+ssh $host 'mkdir -p rocker'
+rsync -a rocker/ $host:rocker/

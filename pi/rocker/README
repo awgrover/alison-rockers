@@ -1,0 +1,42 @@
+Label the Rocker/Receiver/Pi
+
+The initial labels are A and B for the hardware.
+Decide which is the comet and which the coal.
+
+Label:
+* keyfob
+* receiver
+* video file
+* Pi jumper pin location
+
+Connecting the Pi
+
+* Disconnect the power from the Pi. We want it off to start.
+* Hook up the Pi to the monitor/projector HDMI.
+* Turn on the monitor/projector.
+* Plug in the Pi.
+* After a few moments, you should see the splash screen, and then the desktop.
+* You might see the movie instead of the desktop.
+
+A/B Configuration
+
+There is an "A" and a "B" set of Rocker + PI + Video.
+A letter sould be written on the keyfob for the rocker, and receiver board for the PI.
+
+If the correct video is not playing on the Pi, "open" the jumpers:
+* The video should stop, and a message should appear.
+
+Place a jumper on the Pi to designate it as A or B:
+    A 33/34
+    B 39/40
+The program on the Pi will detect the pin to decide if the Pi is A or B,
+and thus which video to play, and which keyfob to listen to.
+
+The video should change soon after you make any change to the jumper.
+
+Name the videos with a prefix "A" or "B", e.g.:
+    A-comet-test.mov
+    B-coal-esperiment.mov
+The videos should be copied to the Pi, into the rocker/ folder.
+There should only be 2 videos in that folder.
+
