@@ -15,6 +15,11 @@ import time
 AppDir = "/home/pi/rocker"
 Logfile = AppDir + "/rocker.log"
 LoggerProcess = 'rocker-logger'
+# nb, ground is phsical 39
+# because we pulse the RF signal, we need a timeout:
+ButtonTimeout = 5 # consider the button still "on" for this many seconds
+APin = 21 # physical pin 40
+BPin = 26 # physical pin 37
 
 def close_process(procs):
     for proc in procs:
@@ -68,13 +73,16 @@ def std_available(message):
 
     return sys.stdin.isatty() and select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
 
-def react_ab_jumpers(actor, *more):
+def react_ab_jumpers(buttons, action, *more):
     # read jumpers
-    # call actor(A|B) w/ changed
+    # call action(A|B) w/ changed
     # return current jumper
     global last
     if not ('last' in globals()):
-        last = None
+        last = 0
+    global last_button_time
+    if not ('last_button_time' in globals()):
+        last_button_time = None
     
     which = last
     
@@ -84,17 +92,23 @@ def react_ab_jumpers(actor, *more):
             # nb: you don't see the return when you hit return, you see a previous return...
             return last # ignore
         which = None if possible == ' ' else possible
+        print(">'{:}' '{:}'-> '{:}'".format(possible, last, which))
     else:
         # check gpio
-        pass
+        if buttons['A'].is_pressed:
+            which = 'A'
+        elif buttons['B'].is_pressed:
+            which = 'B'
+        else:
+            which = None
 
     changed = False
     if which != last:
-        #print("Changed to '{:}'".format(which))
+        print("Changed to '{:}'".format(which))
         last=which
         changed = True
 
-    actor(changed, last, *more)
+    action(changed, last, *more)
 
     return last
 
@@ -128,10 +142,9 @@ def run_video(changed, which_jumper, videos): # a react_ab_jumpers() fn
     if not ('procs' in globals()):
         procs = []
         atexit.register(close_process, procs)
-    global running # should be running
+    global running # video that should be running
     if not ('running' in globals()):
         running = None
-
 
     if changed:
         running = _run_video(procs, which_jumper, videos)
@@ -139,7 +152,6 @@ def run_video(changed, which_jumper, videos): # a react_ab_jumpers() fn
 
         # single letter status
         proc = subprocess.run( ['ps', '-h', '-o', 's', '-p', str(running.pid)], capture_output=True)
-        print("runnign? '{:}'".format(proc.stdout))
         # byte-string, not string
         if proc.returncode != 0 or proc.stdout == b"Z\n" :
             if proc.stdout == b"Z\n":
@@ -148,11 +160,20 @@ def run_video(changed, which_jumper, videos): # a react_ab_jumpers() fn
             log("Video unexpectedly stopped for {:}".format(which_jumper))
             running = _run_video(procs, which_jumper, videos)
 
+from gpiozero import Button
+def setup_gpio():
+    buttons = {}
+    buttons['A'] = Button(APin)
+    buttons['B'] = Button(BPin)
+    return buttons
+
 def _run_video(procs, which_jumper, videos):
     # cleanup
     for p in procs:
+        print("kill {:}".format(" ".join(p.args)))
         p.kill()
-    procs = []
+        p.wait()
+    procs.clear()
 
     if which_jumper == None:
         procs.append( 
@@ -160,7 +181,6 @@ def _run_video(procs, which_jumper, videos):
             )
         return None
     elif which_jumper in videos:
-        print("change to: {:}".format(which_jumper))
         procs.append(
             subprocess.Popen( ['mirage','-f','empty.jpg'], stderr=subprocess.DEVNULL, close_fds=True) 
             )
@@ -169,9 +189,9 @@ def _run_video(procs, which_jumper, videos):
         time.sleep(2)
         log("Play " + videos[which_jumper])
         procs.append(
-            #subprocess.Popen(['cvlc', '--quiet', '--loop', '-f', videos[which_jumper]], close_fds=True)
-            subprocess.Popen(['cvlc', '--quiet', '--no-video-title', '--no-loop', '-f', videos[which_jumper]], stderr=subprocess.DEVNULL, close_fds=True)
+            subprocess.Popen(['cvlc', '--quiet', '--no-video-title', '--loop', '-f', videos[which_jumper]], stderr=subprocess.DEVNULL, close_fds=True)
             )
+
         return procs[-1]
     else:
         procs.append( alert("Internal error, expected [{:}], saw '{:}'".format(", ".join(videos.keys()), which_jumper) ) )
@@ -182,36 +202,11 @@ log("Start")
 
 ensure_zenity()
 try:
+    buttons = setup_gpio()
     videos = ensure_video_files()
     while(True):
-        react_ab_jumpers( run_video, videos )
+        react_ab_jumpers( buttons, run_video, videos )
         time.sleep(0.2)
 except Exception as err:
     log("Crashed: {:}".format(err))
     raise err
-
-exit(0)
-
-try:
-    speaker_test = False
-    # speaker_test = subprocess.Popen(['speaker-test', '-t', 'pink', '-c', '1', '-l', '0'], close_fds=True)
-    # turn off GUI controls because background, and don't need them
-    #speaker_test = subprocess.Popen(['vlc', '--quiet', '--intf', 'dummy', '-f', '/home/pi/rain.mp4'], close_fds=True)
-    speaker_test = subprocess.Popen(['vlc', '--quiet', '-f', '/home/pi/rain.mp4'], close_fds=True)
-
-    min=50
-    max=100
-    while(True):
-        for v in range(0,50):
-            print("V {:}".format(v))
-            # cmd = ['amixer', 'set', 'Speaker', '{:}%,{:}%'.format(v+min, 50-v+50)]
-            cmd = ['pactl', '--', 'set-sink-volume', '@DEFAULT_SINK@', '{:}%'.format(v+min), '{:}%'.format(50-v+min)]
-
-            print(" ".join(cmd))
-            subprocess.call(cmd)
-            time.sleep(0.25)
-
-finally:
-    if speaker_test:
-        speaker_test.kill()
-    print( "exiting\n")
