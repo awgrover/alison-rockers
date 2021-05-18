@@ -24,6 +24,7 @@ Use the standard raspbian OS, image install on a SD Card. I choose a 32GB card t
 *Version Used* : 2021-03-04-raspios-buster-armhf-full
 
 * I assume python3, with the raspberry PI GPIO/etc libraries.
+* I assume 'lxterminal' opens a GUI terminal window
 * I assume `pactl` for pulse-audio volume control.
 * I assume `zenity` for alerts/status
 

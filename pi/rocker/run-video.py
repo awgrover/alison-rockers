@@ -7,14 +7,13 @@ import subprocess, atexit, sys, os
 from datetime import datetime
 import time
 
+from rocker_lib import *
+
 # features we need: zenity
 # detect setup: wait till ready, change detect
 # show black-background, start video
 # ensure video
 
-AppDir = "/home/pi/rocker"
-Logfile = AppDir + "/rocker.log"
-LoggerProcess = 'rocker-logger'
 # nb, ground is phsical 39
 # because we pulse the RF signal, we need a timeout:
 ButtonTimeout = 5 # consider the button still "on" for this many seconds
@@ -25,27 +24,6 @@ BPin = 26 # physical pin 37
 def close_process(procs):
     for proc in procs:
         proc.kill()
-
-def log(message):
-    # timestamp string to our log for the logger-terminal to show
-    with open(Logfile, 'a') as lh:
-        lh.write("{:} {:} {:}\n".format(datetime.now().isoformat(), sys.argv[0], message))
-
-def ensure_logger():
-    proc = subprocess.run(['which','lxterminal'], stdout=subprocess.DEVNULL)
-    if proc.returncode != 0:
-        print("No lxterminal!")
-        while(1):
-            pass
-    print("lxterminal!")
-
-    if subprocess.run(['pidof', LoggerProcess], stdout=subprocess.DEVNULL).returncode != 0:
-        # we want an easy to identify name: LoggerProcess
-        subprocess.Popen([LoggerProcess, '-e', "tail -f "+Logfile], executable='lxterminal', close_fds=True)
-        log("")
-        log("Alison Safford Rocker Pi")
-
-    print("started")
 
 def ensure_zenity():
     proc = subprocess.run(['which','zenity'], stdout=subprocess.DEVNULL)
