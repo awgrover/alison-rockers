@@ -19,6 +19,7 @@ LoggerProcess = 'rocker-logger'
 # because we pulse the RF signal, we need a timeout:
 ButtonTimeout = 5 # consider the button still "on" for this many seconds
 APin = 21 # physical pin 40
+FIXME: just a "B" pin, absence = A
 BPin = 26 # physical pin 37
 
 def close_process(procs):
