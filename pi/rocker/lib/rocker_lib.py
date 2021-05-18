@@ -1,8 +1,17 @@
 import subprocess, atexit, sys, os
+from datetime import datetime
 
 AppDir = "/home/pi/rocker"
 LoggerProcess = 'rocker-logger'
 Logfile = AppDir + "/rocker.log"
+
+def ensure_command_exists(executable):
+    proc = subprocess.run(['which','zenity'], stdout=subprocess.DEVNULL)
+    if proc.returncode != 0:
+        log("Need executable '{:}'".format(executable))
+        return False
+    else:
+        return True
 
 def ensure_process(process_name, command_args, logger_message ):
     # Tests for the process_name, starts it if it is not running.

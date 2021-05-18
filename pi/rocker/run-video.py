@@ -27,15 +27,14 @@ def close_process(procs):
 
 def ensure_zenity():
     proc = subprocess.run(['which','zenity'], stdout=subprocess.DEVNULL)
-    if proc.returncode == 0:
+    if ensure_command_exists('zenity'):
         print("zenity!")
+        # initial announce
         proc = subprocess.Popen(['zenity', '--info', '--text', sys.argv[0]])
         atexit.register(close_process, [proc])
-        return # ok
-    
-    # Complain
-    log("Need zenity installed")
-    subprocess.run(['lxterminal', '-e', "echo 'Need zenity installed.'; while true; do true; done"])
+    else:
+        # Extra complain
+        subprocess.run(['lxterminal', '-e', "echo 'Need zenity installed.'; while true; do true; done"])
 
 def alert(message):
     return subprocess.Popen(['zenity', '--info', '--text', message])
