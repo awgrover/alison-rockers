@@ -14,13 +14,6 @@ from rocker_lib import *
 # show black-background, start video
 # ensure video
 
-# nb, ground is phsical 39
-# because we pulse the RF signal, we need a timeout:
-ButtonTimeout = 5 # consider the button still "on" for this many seconds
-APin = 21 # physical pin 40
-FIXME: just a "B" pin, absence = A
-BPin = 26 # physical pin 37
-
 def close_process(procs):
     for proc in procs:
         proc.kill()
