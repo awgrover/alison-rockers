@@ -16,6 +16,7 @@ from rocker_lib import *
 
 import select
 def std_available(message):
+    # read 1 char from stdin
     # non-blocking, but you  have to EOL to send input
     global first_time
     if not ('first_time' in globals()):
@@ -30,40 +31,21 @@ def react_ab_jumpers(buttons, action, *more):
     # read jumpers
     # call action(A|B) w/ changed
     # return current jumper
-    global last
-    if not ('last' in globals()):
-        last = 0
-    global last_button_time
-    if not ('last_button_time' in globals()):
-        last_button_time = None
+    global react_ab_jumpers_last
+    if not ('react_ab_jumpers_last' in globals()):
+        react_ab_jumpers_last = 0
     
-    which = last
+    which = ab_jumper()
     
-    if std_available("isatty: type A or B or space (and return) to change"):
-        possible = sys.stdin.read(1)
-        if possible == "\n":
-            # nb: you don't see the return when you hit return, you see a previous return...
-            return last # ignore
-        which = None if possible == ' ' else possible
-        print(">'{:}' '{:}'-> '{:}'".format(possible, last, which))
-    else:
-        # check gpio
-        if buttons['A'].is_pressed:
-            which = 'A'
-        elif buttons['B'].is_pressed:
-            which = 'B'
-        else:
-            which = None
-
     changed = False
-    if which != last:
+    if which != react_ab_jumpers_last:
         print("Changed to '{:}'".format(which))
-        last=which
+        react_ab_jumpers_last=which
         changed = True
 
-    action(changed, last, *more)
+    action(changed, react_ab_jumpers_last, *more)
 
-    return last
+    return react_ab_jumpers_last
 
 def ensure_video_files():
     videos = { 'A' : [], 'B' : [] }
@@ -91,16 +73,16 @@ def ensure_video_files():
     return { 'A' : a, 'B' : b }
 
 def run_video(changed, which_jumper, videos): # a react_ab_jumpers() fn
-    global procs
-    if not ('procs' in globals()):
-        procs = []
-        atexit.register(close_process, procs)
+    global run_video_procs
+    if not ('run_video_procs' in globals()):
+        run_video_procs = []
+        atexit.register(close_process, run_video_procs)
     global running # video that should be running
     if not ('running' in globals()):
         running = None
 
     if changed:
-        running = _run_video(procs, which_jumper, videos)
+        running = _run_video(run_video_procs, which_jumper, videos)
     elif running:
 
         # single letter status
@@ -111,7 +93,7 @@ def run_video(changed, which_jumper, videos): # a react_ab_jumpers() fn
                 log("zombie")
                 running.wait()
             log("Video unexpectedly stopped for {:}".format(which_jumper))
-            running = _run_video(procs, which_jumper, videos)
+            running = _run_video(run_video_procs, which_jumper, videos)
 
 from gpiozero import Button
 def setup_gpio():
