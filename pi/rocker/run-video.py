@@ -7,6 +7,7 @@ import subprocess, atexit, sys, os
 from datetime import datetime
 import time
 
+import sys; sys.path.append('lib')
 from rocker_lib import *
 
 # features we need: zenity

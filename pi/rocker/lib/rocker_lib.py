@@ -10,6 +10,9 @@ Logfile = AppDir + "/log/rocker.log"
 JumperFile = AppDir + "/log/jumper-setting"
 JumperProcess = "jumper-reader" # also + .py for actual script
 
+VolumeProcess = 'rf-to-volume'
+VideoProcess = 'run-video'
+
 # Jumper for A|B designation
 # nb, ground is physical 39
 BPin = 21 # physical pin 40 to physical pin 39
@@ -62,9 +65,23 @@ def ensure_logger():
         )
     print("started")
 
+def ensure_video_process():
+    # separate process runs correct video
+    ensure_process(
+        VideoProcess, 
+        [ 'python3', VideoProcess + ".py" ],
+        "Startup {:}".format(VideoProcess)
+        )
+
+def ensure_volume_process():
+    ensure_process(
+        VolumeProcess, 
+        [ 'python3', VolumeProcess + ".py" ],
+        "Startup {:}".format(VolumeProcess)
+        )
+
 def ensure_jumper_process():
     # separate process reads/notes which jumper
-    subprocess.Popen([JumperProcess, JumperProcess + ".py"], executable='python3', close_fds=True)
     ensure_process(
         JumperProcess, 
         [ 'python3', JumperProcess + ".py" ],

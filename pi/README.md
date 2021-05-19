@@ -86,6 +86,9 @@ Copy the rocker/ directory to the raspberry pi:
 
 ## Init, aka Startup
 
+Edit /etc/xdg/lxsession/LXDE/autostart
+   @python3 /home/pi/rocker/startup.py > /home/pi/rocker/log/startup.log 2>&1
+
 .....
 
 

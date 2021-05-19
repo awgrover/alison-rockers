@@ -7,9 +7,9 @@ use ab_jumper() to get current value.
 """
 
 import os
-import sys; sys.path.append('lib')
 from time import sleep
 
+import sys; sys.path.append('lib')
 from rocker_lib import *
 
 from gpiozero import Button
