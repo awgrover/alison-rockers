@@ -1,6 +1,9 @@
 import subprocess, atexit, sys, os
 from datetime import datetime
 
+import sys; sys.path.append('lib')
+from every.every import Every
+
 AppDir = "/home/pi/rocker"
 LoggerProcess = 'rocker-logger'
 Logfile = AppDir + "/log/rocker.log"
@@ -59,30 +62,58 @@ def ensure_logger():
         )
     print("started")
 
+def ensure_jumper_process():
+    # separate process reads/notes which jumper
+    subprocess.Popen([JumperProcess, JumperProcess + ".py"], executable='python3', close_fds=True)
+    ensure_process(
+        JumperProcess, 
+        [ 'python3', JumperProcess + ".py" ],
+        "Startup {:}".format(JumperProcess)
+        )
+
 def log(message):
     # timestamp string to our log for the logger-terminal to show
     with open(Logfile, 'a') as lh:
         lh.write("{:} {:} {:}\n".format(datetime.now().isoformat(), sys.argv[0], message))
 
 def ab_jumpers():
+    # Don't bash the file, just periodically read it
+    global ab_jumpers_interval
+    if not ( 'ab_jumpers_interval' in globals()):
+        ab_jumpers_interval = Every(0.5)
+    global ab_jumpers_last
+    if not ( 'ab_jumpers_last' in globals()):
+        ab_jumpers_last = 'A'
+        log("Init jumper " + ab_jumpers_last)
+        print("Init jumper " + ab_jumpers_last)
+
     # try to log errors only once
-    global last_error
-    if not ('last_error' in globals()):
-        last_error = None
+    global ab_jumpers_last_error
+    if not ('ab_jumpers_last_error' in globals()):
+        ab_jumpers_last_error = None
 
-    try:
-        with open(JumperFile,mode='r') as f:
-            j = f.read().rstrip()
-            if not (j in ['A','B']):
-                raise ValueError("Expected A|B in {:}, saw: {:}".format(JumperFile, j))
-            return j
+    if ab_jumpers_interval():
+        try:
+            with open(JumperFile,mode='r') as f:
+                j = f.read().rstrip()
+                if not (j in ['A','B']):
+                    raise ValueError("Expected A|B in {:}, saw: {:}".format(JumperFile, j))
+                if j != ab_jumpers_last:
+                    log("Jumper " + ab_jumpers_last)
+                    print("Jumper " + ab_jumpers_last)
+                ab_jumpers_last = j
 
-    except (AttributeError, ValueError, FileNotFoundError) as err: # None does AttributeError
-        if str(err) != str(last_error):
-            last_error = err
-            log("Bad value in {:} : {:}".format(JumperFile, err))
-            print(err)
-        return 'A' # might as well default to something
+        except (AttributeError, ValueError, FileNotFoundError) as err: # None does AttributeError
+            if str(err) != str(ab_jumpers_last_error):
+                ab_jumpers_last_error = err
+                log("Bad value in {:} : {:}".format(JumperFile, err))
+                print(err)
+                if j != ab_jumpers_last:
+                    log("Err jumper " + ab_jumpers_last)
+                    print("Err jumper " + ab_jumpers_last)
+            ab_jumpers_last = 'A' # might as well default to something
+
+    return ab_jumpers_last
 
 def ensure_zenity():
     if ensure_command_exists('zenity'):
