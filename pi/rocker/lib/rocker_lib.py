@@ -3,16 +3,18 @@ from datetime import datetime
 
 AppDir = "/home/pi/rocker"
 LoggerProcess = 'rocker-logger'
-Logfile = AppDir + "/rocker.log"
-JumperFile = Appdir + "/jumper-setting"
+Logfile = AppDir + "/log/rocker.log"
+JumperFile = AppDir + "/log/jumper-setting"
 JumperProcess = "jumper-reader" # also + .py for actual script
 
 # Jumper for A|B designation
 # nb, ground is physical 39
 BPin = 21 # physical pin 40 to physical pin 39
 
+# fixme: consider quieting things if headless... xrandr -> "Can't open display" vs /^\S+ connected/
+
 def ensure_command_exists(executable):
-    proc = subprocess.run(['which','zenity'], stdout=subprocess.DEVNULL)
+    proc = subprocess.run(['which',executable], stdout=subprocess.DEVNULL)
     if proc.returncode != 0:
         log("Need executable '{:}'".format(executable))
         return False
@@ -44,7 +46,12 @@ def ensure_process(process_name, command_args, logger_message ):
         log("")
         log(logger_message)
 
+def ensure_log_dir():
+    if subprocess.run(['mkdir','-p', AppDir + "/log"]).returncode != 0:
+        print("Couldn't mkdir {:}/log".format(AppDir))
+
 def ensure_logger():
+    ensure_log_dir()
     ensure_process(
         LoggerProcess, 
         [ 'lxterminal', '-e', "tail -f "+Logfile ],
@@ -58,15 +65,39 @@ def log(message):
         lh.write("{:} {:} {:}\n".format(datetime.now().isoformat(), sys.argv[0], message))
 
 def ab_jumpers():
-    if check_jumper_file():
-        with open(JumperFile,mode='r') as f:
-            try:
-                j = f.read().rstrip()
-                if not (j in ['A','B']):
-                    raise ValueError("Expected A|B in {:}, saw: {:}".format(JumperFile, j))
+    # try to log errors only once
+    global last_error
+    if not ('last_error' in globals()):
+        last_error = None
 
-            except (AttributeError, ValueError) as err: # None does AttributeError
-                log("Bad value in {:} : {:}".format(JumperFile, err))
-                return 'A' # might as well default to something
+    try:
+        with open(JumperFile,mode='r') as f:
+            j = f.read().rstrip()
+            if not (j in ['A','B']):
+                raise ValueError("Expected A|B in {:}, saw: {:}".format(JumperFile, j))
             return j
+
+    except (AttributeError, ValueError, FileNotFoundError) as err: # None does AttributeError
+        if str(err) != str(last_error):
+            last_error = err
+            log("Bad value in {:} : {:}".format(JumperFile, err))
+            print(err)
+        return 'A' # might as well default to something
+
+def ensure_zenity():
+    if ensure_command_exists('zenity'):
+        print("zenity!")
+        # initial announce
+        proc = subprocess.Popen(['zenity', '--info', '--text', sys.argv[0]])
+        atexit.register(close_process, [proc])
+    else:
+        # Extra complain
+        subprocess.run(['lxterminal', '-e', "echo 'Need zenity installed.'; while true; do true; done"])
+
+def alert(message):
+    return subprocess.Popen(['zenity', '--info', '--text', message])
+
+def close_process(procs):
+    for proc in procs:
+        proc.kill()
 

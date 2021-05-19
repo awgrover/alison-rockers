@@ -14,24 +14,6 @@ from rocker_lib import *
 # show black-background, start video
 # ensure video
 
-def close_process(procs):
-    for proc in procs:
-        proc.kill()
-
-def ensure_zenity():
-    proc = subprocess.run(['which','zenity'], stdout=subprocess.DEVNULL)
-    if ensure_command_exists('zenity'):
-        print("zenity!")
-        # initial announce
-        proc = subprocess.Popen(['zenity', '--info', '--text', sys.argv[0]])
-        atexit.register(close_process, [proc])
-    else:
-        # Extra complain
-        subprocess.run(['lxterminal', '-e', "echo 'Need zenity installed.'; while true; do true; done"])
-
-def alert(message):
-    return subprocess.Popen(['zenity', '--info', '--text', message])
-
 import select
 def std_available(message):
     # non-blocking, but you  have to EOL to send input
