@@ -1,13 +1,15 @@
 /*
- Designed for itsy bitsy 32u4
- 
+  Designed for itsy bitsy 32u4
+  "AVR109 compatible (same as Flora, Feather 32u4, Leonardo, etc)"
+
   sleep till: switch or watchdog
   while switch is on:
-  send a pulse sequence out (to driver transistor)
+    send a pulse sequence out (to driver transistor)
   Because a second xmitter is blocked if it overlaps,
-  we need 2 patterns that can't always overlap:
+    we need 2 patterns that can't always overlap:
   The SL-jumper (ao->gnd) designates short-gap (open), long-gap (closed).
-  Correspondance to "A" or "B" is not required at all.
+  Correspondance to "A" or "B" is not required at all:
+    that is encoded in the hard-wired keyfob.
 
   std programmer: AVRISP mkii
   If the BUILTIN is throbbing, then you are in bootloader mode:
@@ -15,13 +17,15 @@
   You have about 2 seconds to hit upload,
   so hit reset again if you miss it.
 
-todo: sleep, power reduction
-test w/better power supply
+  todo: sleep, power reduction
+  test w/better power supply
 */
+
+// lib: Streaming Mikal Hart <mikal@arduiniana.org>
 #include <Streaming.h>
 #include "every.h"
 
-#define StandAlone 0 // no serial, power down everything
+#define StandAlone 1 // "installation mode": no serial, power down everything
 
 // Pins
 // LED_BUILTIN is 13 on itsybitsy 32u4
@@ -44,17 +48,24 @@ int ShortGap = 0; // to be filled in based on jumper
 int EndGap = 0; // to be filled in based on jumper
 
 void setup() {
-  Serial.begin(115200); while (!Serial) {}
-  Serial << "Start\n";
-
-  pinMode(Switch, INPUT_PULLUP);
-  pinMode(SLJumper, INPUT_PULLUP);
-  
-  pinMode(Pulse, OUTPUT);
-  digitalWrite(Pulse, LOW);
 
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
+
+  pinMode(Switch, INPUT_PULLUP);
+  pinMode(SLJumper, INPUT_PULLUP);
+
+  pinMode(Pulse, OUTPUT);
+  digitalWrite(Pulse, LOW);
+
+  // disables serial output when standalone
+  if (! StandAlone) {
+    // NB: (Serial) will always be false if USB-data is not connected
+    // on 32u4's like itsy-bitsy
+    Timer serial_timeout(4 * 1000);
+    Serial.begin(115200); while (!Serial && !serial_timeout()) {}
+  }
+  Serial << "Start\n";
 
   if (OnTime * 2 + LShortTime > TotalPatternLength) {
     Serial << "Fail: pattern with LShortTime ("
@@ -87,15 +98,29 @@ void setup() {
          << "-" << OnTime << "- "
          << "_" << EndGap << "_"
          << "\n";
+
+  // give a clue that we are powered-on: blink a bit
+  digitalWrite(LED_BUILTIN, HIGH);
+  for (int i = 0; i < 10; i++) {
+    delay(200);
+    digitalWrite(LED_BUILTIN, ! digitalRead(LED_BUILTIN));
+    // in stand-alone, I usually have an LED instead of the transmitter
+    // so I like to see it flash:
+    if (! StandAlone) digitalWrite( Pulse, ! digitalRead(Pulse) );
+  }
+  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite( Pulse, LOW );
 }
 
 void loop() {
-  // will turn on Pulse on power up for 1 second:
+  // on power-up, will turn on Pulse for 1 "persistance":
+  // initial persistance is short, reset to longer for real event below
   static Timer switch_persistance(100); // pretend to be on for at least a while
   static boolean switch_was_reset = 1;
+  
   if ( ! digitalRead(Switch) ) {
     // high is open (pullup)
-    digitalWrite(LED_BUILTIN, HIGH);
+    if (! StandAlone) digitalWrite(LED_BUILTIN, HIGH);
     // but pretend to be on for 1 second more, which is not enough for a full pattern
     switch_persistance.reset(1 * 1000);
     //Serial << "ON\n";
@@ -107,7 +132,7 @@ void loop() {
 
   // if we are pretending switch is (still) on
   // i.e. timer hasn't expired
-  
+
   if (switch_persistance.until()) {
     // signal if this is a new duration of the switch being down
     pulse_sequence(switch_was_reset);
@@ -120,7 +145,7 @@ void loop() {
     digitalWrite( Pulse, LOW );
   }
 
-  delay(10);
+  delay(10); // FIXME: sleep
 }
 
 void pulse_sequence(boolean restart) {
