@@ -220,7 +220,7 @@ class Every::Pattern : public Every {
   public:
     int seq_count;
     const unsigned long *_pattern;
-    unsigned int pattern_i = -1; // because if(every()) will increment before you get pattern()
+    unsigned int pattern_i = 0; // because if(every()) will increment before you get pattern()
 
     // captures the pattern!
     Pattern(const int seq_count, const unsigned long pattern[], bool now = false)
@@ -251,6 +251,13 @@ class Every::Pattern : public Every {
       }
       return hit;
     }
+
+    virtual void reset(boolean now=false) {
+      pattern_i = 0;
+      interval = _pattern[pattern_i];
+      Every::reset(now);
+    }
+
     template <typename T>
     boolean operator()(T lambdaF) {
       // return value is ignored from the lambda
@@ -329,6 +336,7 @@ class Every2Sequence : public Every {
 };
 
 class Timer { // True, once, after n millis
+  // NB: Slightly different methods than Every
   public:
     unsigned long last;
     boolean running;

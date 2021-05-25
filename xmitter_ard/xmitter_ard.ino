@@ -29,75 +29,112 @@
 
 // Pins
 // LED_BUILTIN is 13 on itsybitsy 32u4
-const int Switch = 12; // we'll want a pcint pin...
-const int Pulse = 7; // just digital-out
-const int SLJumper = A0; // open is A, closed is B
+const int Switch = 7; // we want a interrupt pin (0,1,2,3,7)
+const int SwitchInterrupt = digitalPinToInterrupt(Switch);
+const int Pulse = 5; // just digital-out
+const int SLJumper = 10; // open is A, closed is B
+const int SLJumper_GND = 9; // we set it to low as gnd for jumper, so a jumper can just go between adjacent pins
 
 // Pulse Pattern
 const int TotalPatternLength = 4 * 1000; // 4 seconds
 const int OnTime = 200; // minimum reliable
 // leave an OnTime gap for the other to fit in
 // ----____----___...
-const int SShortTime = OnTime + 20;
+const int SleepTimeMinQuanta = 16; // watchdog timer min duration
+const int ShortOffTime = OnTime + 20;
 // The second on has to miss A's:
 // ----________----___...
-const int LShortTime = SShortTime + OnTime + 20;
+const int LongOffTime = ShortOffTime + OnTime + 20;
 
-char Which = '?'; // to be filled in
-int ShortGap = 0; // to be filled in based on jumper
-int EndGap = 0; // to be filled in based on jumper
+char Which = '?'; // serial/debug: to be filled in with S or L for the off time
+// The pulse pattern, 0's filled in at setup():
+unsigned long BlinkPattern[] = {OnTime, 0, OnTime, 0};
+template <typename T, unsigned S> inline unsigned arraysize(const T (&v)[S]) {
+  return S;
+};
+
+Every::Pattern Pulsing(arraysize(BlinkPattern), BlinkPattern);
+int ShortOff_I = 1; // to be filled in based on jumper
+int EndOff_I = arraysize(BlinkPattern) - 1; // to be filled in based on jumper
+
+void serial_wait() {
+  // have to wait on usb-serial (or timeout if not connected)
+  // Blink while waiting
+
+  Timer serial_begin_timeout(2000);
+  unsigned long BlinkPattern[] = {10, 100};
+  Every::Pattern blink(2, BlinkPattern, true);
+
+  digitalWrite(LED_BUILTIN, LOW);
+  while ( ! Serial && ! serial_begin_timeout() ) {
+    if (blink()) digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN) );
+  }
+}
 
 void setup() {
 
+  // Setup for minimum power use:
+  // worth 1-3ma
+  // do first, so other uses will "override" later
+  for (int i = 0; i < NUM_DIGITAL_PINS; i++) {
+    // the pins_arduino.h for itsybitsy32u4/ doesn't define LED_BUILTIN_TX
+    if (i != 30 /* LED_BUILTIN_TX */ ) { // might not be necessary to skip
+      pinMode(i, OUTPUT);
+      digitalWrite(i, LOW);
+    }
+  }
+
+  // Minimum signal that we started:
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
+  // using pullup is slightly more power hungry ~micro-amps
   pinMode(Switch, INPUT_PULLUP);
   pinMode(SLJumper, INPUT_PULLUP);
-
+  // a "ground" for the above so a jumper can just go between adjacent pins
+  pinMode(SLJumper_GND, OUTPUT);
+  digitalWrite(SLJumper_GND, LOW);
+  
   pinMode(Pulse, OUTPUT);
   digitalWrite(Pulse, LOW);
 
-  // disables serial output when standalone
-  if (! StandAlone) {
-    // NB: (Serial) will always be false if USB-data is not connected
-    // on 32u4's like itsy-bitsy
-    Timer serial_timeout(4 * 1000);
-    Serial.begin(115200); while (!Serial && !serial_timeout()) {}
-  }
-  Serial << "Start\n";
+  serial_wait(); // flashes rapidly for 2 seconds, also startup signal
 
-  if (OnTime * 2 + LShortTime > TotalPatternLength) {
-    Serial << "Fail: pattern with LShortTime ("
-           << (OnTime * 2 + LShortTime)
-           << ") is longer than TotalPatternLength("
-           << TotalPatternLength
-           << ")\n";
-  }
+  Serial << "Start\n";
 
   // Short|Long gap
   // FIXME: signal which A|B somehow?
   if (digitalRead(SLJumper)) {
-    // high is open, so A
+    // high is open, so S
     Which = 'S';
-    ShortGap = SShortTime;
-    Serial << "Short Gap\n";
-
+    BlinkPattern[ShortOff_I] = ShortOffTime;
   }
   else {
     Which = 'L';
-    ShortGap = LShortTime;
-    Serial << "Long Gap\n";
+    BlinkPattern[ShortOff_I] = LongOffTime;
   }
 
-  EndGap = TotalPatternLength - (OnTime * 2 + LShortTime);
+  int end_off = TotalPatternLength;
+  for (int i = 0; i < EndOff_I; i++) {
+    end_off -= BlinkPattern[i];
+  }
+  BlinkPattern[EndOff_I] = end_off;
 
-  Serial << "Pattern: " << Which << "\n"
-         << "-" << OnTime << "- "
-         << "_" << ShortGap << "_ "
-         << "-" << OnTime << "- "
-         << "_" << EndGap << "_"
-         << "\n";
+  Serial << "Pattern: " << Which << "\n";
+  int pattern_sum = 0;
+  for (unsigned int i = 0; i < arraysize(BlinkPattern); i++) {
+    pattern_sum += BlinkPattern[i];
+    Serial << ( i % 2 ? "_" : "-") << BlinkPattern[i] << " ";
+  }
+  Serial << "\n";
+
+  if (pattern_sum > TotalPatternLength) {
+    Serial << "Fail: pattern ("
+           << pattern_sum
+           << ") is longer than TotalPatternLength("
+           << TotalPatternLength
+           << ")\n";
+  }
 
   // give a clue that we are powered-on: blink a bit
   digitalWrite(LED_BUILTIN, HIGH);
@@ -114,16 +151,17 @@ void setup() {
 
 void loop() {
   // on power-up, will turn on Pulse for 1 "persistance":
+  // covers debounce, and person moving around on the seat
   // initial persistance is short, reset to longer for real event below
   static Timer switch_persistance(100); // pretend to be on for at least a while
   static boolean switch_was_reset = 1;
-  
+  static Every say_on(500);
+
   if ( ! digitalRead(Switch) ) {
     // high is open (pullup)
-    if (! StandAlone) digitalWrite(LED_BUILTIN, HIGH);
+    if (StandAlone) digitalWrite(LED_BUILTIN, HIGH);
     // but pretend to be on for 1 second more, which is not enough for a full pattern
     switch_persistance.reset(1 * 1000);
-    //Serial << "ON\n";
   }
   else {
     // let the timer expire == off
@@ -136,76 +174,40 @@ void loop() {
   if (switch_persistance.until()) {
     // signal if this is a new duration of the switch being down
     pulse_sequence(switch_was_reset);
+    if (switch_was_reset) Serial << millis() << " ON\n";
     switch_was_reset = 0;
-    // Serial << "Running " << (millis() - switch_persistance.last) << "\n";
+    // if (StandAlone && say_on()) Serial << millis() << " Running " << (millis() - switch_persistance.last) << "\n";
   }
   else {
-    //Serial << "OFF\n";
+    if (! switch_was_reset) Serial << millis() << " OFF\n";
     switch_was_reset = 1;
     digitalWrite( Pulse, LOW );
   }
 
+  // if switch && persistance is off, we can deep sleep till interrupt
+  // if we are pulsing, we could power down, but millis() will be stopped
+  //  so we'd have to compensate when we watchdog wakeup
+  //  but we'd be something like 1% on...
+  // we can look ahead: longsleep = BlinkPattern[Pulsing.sequence() + 1]
+  // except powerDown+watchdog is very inaccurate: maybe 12%? which is ok I guess!
   delay(10); // FIXME: sleep
 }
 
 void pulse_sequence(boolean restart) {
-  // on short-delay on long-delay
-  enum State {S_On1, S_On1Hold, S_Short, S_On2, S_End};
-  static State state = S_On1;
-
-  static Timer On(OnTime);
-  // we don't know the durations at compile time:
-  static Timer short_off(0);
-  static Timer long_off(0); // till end of PatternLength
-
+  static unsigned long last_change = millis();
+  
   if (restart) {
     // so we can send out a pulse immediately
-    state = S_On1;
+    Pulsing.reset();
+    if (StandAlone) Serial << millis() - last_change << " RF reset sequence, start []" << Pulsing.sequence() << " 1" << "\n";
+    digitalWrite( Pulse, HIGH); // start high
+    last_change = millis();
   }
 
-  switch (state) {
-    case S_On1:
-      // (re)Start
-      On.reset();
-      digitalWrite( Pulse, HIGH);
-      state = S_On1Hold;
-      Serial << state << " ";
-    // fall through
-
-    case S_On1Hold:
-      // in the "ON" state for the 1st pulse
-      if (On()) {
-        state = S_Short;
-        digitalWrite( Pulse, LOW );
-        short_off.reset(ShortGap);
-        Serial << state << " ";
-      }
-      break;
-
-    case S_Short:
-      if (short_off()) {
-        state = S_On2;
-        digitalWrite( Pulse, HIGH );
-        On.reset();
-        Serial << state << " ";
-      }
-      break;
-
-    case S_On2:
-      if (On()) {
-        state = S_End;
-        digitalWrite( Pulse, LOW );
-        long_off.reset(EndGap);
-        Serial << state << " ";
-      }
-      break;
-
-    case S_End:
-      if (long_off()) {
-        state = S_On1;
-        // that special state takes care of HIGH/reset
-        Serial << state << "\n";
-      }
-      break;
+  if (Pulsing()) {
+    digitalWrite( Pulse, ! digitalRead(Pulse) );
+    if (StandAlone) Serial << millis() - last_change << " RF []" << Pulsing.sequence() << " " << digitalRead(Pulse) << "\n";
+    last_change = millis();
   }
+
 }
