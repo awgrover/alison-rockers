@@ -32,7 +32,9 @@
 */
 
 // lib: Streaming Mikal Hart <mikal@arduiniana.org>
-#include <Streaming.h>
+#include "Streaming.h"
+// lib:  LowPower by PowerLab
+#include "LowPower.h"
 #include "every.h"
 
 #define StandAlone 1 // "installation mode": no serial, power down everything
@@ -218,6 +220,19 @@ void pulse_sequence(boolean restart) {
     digitalWrite( Pulse, ! digitalRead(Pulse) );
     if (StandAlone) Serial << millis() - last_change << " RF []" << Pulsing.sequence() << " " << digitalRead(Pulse) << "\n";
     last_change = millis();
+
+    // we can idle/sleep while waiting:
+    unsigned long next_period = BlinkPattern[Pulsing.sequence()];
+    
+    // assume long periods aren't accuracy important,
+    // so let's deep-sleep for long periods
+    if (next_period > 1000ul) {
+      if (StandAlone) Serial << "SLEEP for " << next_period << " @" << millis() << "\n";
+      LowPower.longPowerDown(next_period);
+      // USBDevice.attach(); appears to be harmful! I mostly get serial port reconnect w/o!
+      if (StandAlone) Serial << "Wake @" << millis() << "\n";
+      Pulsing.last = millis() - next_period; // force expire, clock doesn't run during powerdown
+    }
   }
 
 }
