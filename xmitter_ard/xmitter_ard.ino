@@ -3,6 +3,17 @@
   "AVR109 compatible (same as Flora, Feather 32u4, Leonardo, etc)"
 
   sleep till: switch or watchdog
+  
+  startup:
+  ** fast flashing while waiting for serial
+  ** slow flashing for about 1 second
+  ** start with a short pulse
+  ** run:
+
+  On swtich close: if it has been > 1 sec since last switch close: restart pattern of pulses
+  While switch close, run pulse-pattern
+  continue the pulse-pattern for 1 second after the switch opens
+
   while switch is on:
     send a pulse sequence out (to driver transistor)
   Because a second xmitter is blocked if it overlaps,
@@ -18,7 +29,6 @@
   so hit reset again if you miss it.
 
   todo: sleep, power reduction
-  test w/better power supply
 */
 
 // lib: Streaming Mikal Hart <mikal@arduiniana.org>
@@ -94,7 +104,7 @@ void setup() {
   // a "ground" for the above so a jumper can just go between adjacent pins
   pinMode(SLJumper_GND, OUTPUT);
   digitalWrite(SLJumper_GND, LOW);
-  
+
   pinMode(Pulse, OUTPUT);
   digitalWrite(Pulse, LOW);
 
@@ -195,7 +205,7 @@ void loop() {
 
 void pulse_sequence(boolean restart) {
   static unsigned long last_change = millis();
-  
+
   if (restart) {
     // so we can send out a pulse immediately
     Pulsing.reset();
