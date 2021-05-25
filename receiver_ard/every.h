@@ -162,7 +162,7 @@ class Every {
       return hit;
     }
 
-    // the 'virtual' prevents optimizing away an unused 'interval' instance-var
+    // sadly, the 'virtual' also prevents optimizing away an unused 'interval' instance-var
     virtual void reset(boolean now=false) {
       last = millis();
       if (now) last -= interval;

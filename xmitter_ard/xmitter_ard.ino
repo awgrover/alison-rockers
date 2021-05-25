@@ -2,8 +2,11 @@
   Designed for itsy bitsy 32u4
   "AVR109 compatible (same as Flora, Feather 32u4, Leonardo, etc)"
 
-  sleep till: switch or watchdog
-  
+  ### To load new program
+  If we are power-down, probably won't work, so:
+  Press reset button (once) on itsy-bitsy and upload immediately
+  (startup takes significant time before we get to power-down).
+
   startup:
   ** fast flashing while waiting for serial
   ** slow flashing for about 1 second
@@ -13,6 +16,11 @@
   On swtich close: if it has been > 1 sec since last switch close: restart pattern of pulses
   While switch close, run pulse-pattern
   continue the pulse-pattern for 1 second after the switch opens
+
+  We deep-sleep:
+    When the switch off (interrupt wakes us)
+      (and we do a quick led pulse as heartbeat)
+    When the Pulse pattern has an interval > 1second
 
   while switch is on:
     send a pulse sequence out (to driver transistor)
@@ -43,6 +51,7 @@
 // LED_BUILTIN is 13 on itsybitsy 32u4
 const int Switch = 7; // we want a interrupt pin (0,1,2,3,7)
 const int SwitchInterrupt = digitalPinToInterrupt(Switch);
+volatile  boolean SwitchHit = 0;
 const int Pulse = 5; // just digital-out
 const int SLJumper = 10; // open is A, closed is B
 const int SLJumper_GND = 9; // we set it to low as gnd for jumper, so a jumper can just go between adjacent pins
@@ -101,7 +110,9 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
 
   // using pullup is slightly more power hungry ~micro-amps
+  // will attach interrupt below
   pinMode(Switch, INPUT_PULLUP);
+
   pinMode(SLJumper, INPUT_PULLUP);
   // a "ground" for the above so a jumper can just go between adjacent pins
   pinMode(SLJumper_GND, OUTPUT);
@@ -161,6 +172,13 @@ void setup() {
   digitalWrite( Pulse, LOW );
 }
 
+void wakeUp()
+{
+  // Just a handler for the pin interrupt.
+  detachInterrupt(SwitchInterrupt);
+  SwitchHit = 1;
+}
+
 void loop() {
   // on power-up, will turn on Pulse for 1 "persistance":
   // covers debounce, and person moving around on the seat
@@ -194,15 +212,26 @@ void loop() {
     if (! switch_was_reset) Serial << millis() << " OFF\n";
     switch_was_reset = 1;
     digitalWrite( Pulse, LOW );
+
+    // we can powerdown if the switch is off, and let interrupt wake us up
+    while (! SwitchHit) {
+      attachInterrupt(SwitchInterrupt, wakeUp, LOW);
+
+      if (StandAlone) Serial << "SLEEP-OFF @" << millis() << "\n";
+      LowPower.powerDown(StandAlone ? SLEEP_2S : SLEEP_4S, ADC_OFF, BOD_OFF);
+      // a Serial operation, here, seems to cause a 200ms delay: waiting for usb-serial?
+      // Without active serial, we get immediate Pulse pattern restart
+      if (StandAlone) Serial << "SLEEP-ON @" << millis() << "\n";
+
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(10);
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+    SwitchHit = 0;
+
   }
 
-  // if switch && persistance is off, we can deep sleep till interrupt
-  // if we are pulsing, we could power down, but millis() will be stopped
-  //  so we'd have to compensate when we watchdog wakeup
-  //  but we'd be something like 1% on...
-  // we can look ahead: longsleep = BlinkPattern[Pulsing.sequence() + 1]
-  // except powerDown+watchdog is very inaccurate: maybe 12%? which is ok I guess!
-  delay(10); // FIXME: sleep
+  // delay(10);
 }
 
 void pulse_sequence(boolean restart) {
@@ -223,7 +252,7 @@ void pulse_sequence(boolean restart) {
 
     // we can idle/sleep while waiting:
     unsigned long next_period = BlinkPattern[Pulsing.sequence()];
-    
+
     // assume long periods aren't accuracy important,
     // so let's deep-sleep for long periods
     if (next_period > 1000ul) {
