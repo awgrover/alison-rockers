@@ -4,7 +4,14 @@
 
   ### To load new program
   If we are power-down, probably won't work, so:
-  Press reset button (once) on itsy-bitsy and upload immediately
+  Press reset button (once) on itsy-bitsy,
+  wait for built-in LED
+  then 
+  
+  
+  
+  
+  upload immediately
   (startup takes significant time before we get to power-down).
 
   startup:
@@ -45,7 +52,7 @@
 #include "LowPower.h"
 #include "every.h"
 
-#define StandAlone 1 // "installation mode": no serial, power down everything
+#define StandAlone 1 // "installation mode": no serial
 
 // Pins
 // LED_BUILTIN is 13 on itsybitsy 32u4
@@ -58,7 +65,7 @@ const int SLJumper_GND = 9; // we set it to low as gnd for jumper, so a jumper c
 
 // Pulse Pattern
 const int TotalPatternLength = 4 * 1000; // 4 seconds
-const int OnTime = 200; // minimum reliable
+const int OnTime = 400; // minimum reliable
 // leave an OnTime gap for the other to fit in
 // ----____----___...
 const int SleepTimeMinQuanta = 16; // watchdog timer min duration
@@ -160,6 +167,7 @@ void setup() {
   }
 
   // give a clue that we are powered-on: blink a bit
+  // NB: also gives time to upload w/o being in power down, so allow at least 2 seconds here!
   digitalWrite(LED_BUILTIN, HIGH);
   for (int i = 0; i < 10; i++) {
     delay(200);
