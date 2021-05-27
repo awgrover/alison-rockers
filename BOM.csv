@@ -1,0 +1,35 @@
+Quantity,Vendor,Description,product-number,$ each
+,All Adafruit products also available at Digikey
+
+,,Rocker
+
+2,EACH,consisting of:
+1,alison,Wood Rocker modified
+1,alison,lever arm micro switch spdt,,1.00
+
+3,EACH,consisting of:
+1,alison,gator board mounting with:
+1,Adafruit,ItsyBitsy 32u4 - 5V 16MHz,3677,9.95
+1,Adafruit,Keyfob 2-Button RF Remote Control - 315MHz,1391,6.95
+1,Adafruit,MiniBoost 5V @ 1A - TPS61023,4654,3.56
+1,Adafruit,JST-PH Battery Extension Cable - 500mm,1131,1.76
+1,Digikey,BATTERY HOLDER 18650 SOLDER LUG,36-1044-ND,3.11
+1,alan,arduino code,https://github.com/awgrover/alison-rockers/tree/main/xmitter_ard,
+
+,,Charging/Batteries
+2,EACH,consisting of:
+1,Digikey,"IRC18650 2 BAY CHARGER (adapter, cable, bay)",3145-ULLIONCHG-ND,12.99
+2,Digikey,IRC18650 3.7V 2.6AH PROTECTED (18650 battery),3145-UL1865-26-1P-ND,4.99
+
+,,Ceiling/Projector
+3,each,consisting of:
+1,Digikey,Raspberry PI 3B+,1690-1014-ND,43.29
+1,Digikey,AC/DC WALL MNT ADAPTER 5.1V 13W (usb micro),1690-1021-ND,13.40
+1,Digikey,16GB 3D SD CARD (preloaded),3247-SDCOEM-16GB-ND,9.82
+1,Adafruit,Simple RF M4 Receiver - 315MHz Momentary,1391,4.95
+1,Digikey,0.1" jumper,,0.10
+1,alan,raspberry pi code,https://github.com/awgrover/alison-rockers/tree/main/pi
+
+,,Service Parts
+1,Digikey,USB 2.0 A MALE TO USB 2.0 MICRO (cable),Q968-ND,2.70
+1,Adafruit,Keyfob 4-Button RF Remote Control - 315MHz,1095,6.95
