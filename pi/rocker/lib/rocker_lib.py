@@ -35,19 +35,18 @@ def ensure_process(process_name, command_args, logger_message ):
     # Does not suppress stderr (does suppress stdout)
 
     # FIXME: lockfile for "ensure_process"
-    print("Ensure {:} AS {:}".format(process_name, command_args))
     executable = command_args.pop(0)
-    print("  exec {:} ... {:}".format(executable, command_args))
 
     proc = subprocess.run(['which', executable], stdout=subprocess.DEVNULL)
     if proc.returncode != 0:
         print("No '{:}'!".format(executable))
         while(1):
             pass
-    print(executable + "!")
 
     if subprocess.run(['pidof', process_name], stdout=subprocess.DEVNULL).returncode != 0:
         # we want an easy to identify name: LoggerProcess
+        print("Ensure {:} AS {:}".format(process_name, command_args))
+        print("  exec {:} ... {:}".format(executable, command_args))
         subprocess.Popen([process_name, *command_args], executable=executable, close_fds=True)
         log("")
         log(logger_message)

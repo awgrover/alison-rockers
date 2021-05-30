@@ -218,12 +218,12 @@ class Every::Pattern : public Every {
     //    });
 
   public:
-    int seq_count;
+    unsigned int seq_count;
     const unsigned long *_pattern;
     unsigned int pattern_i = 0; // because if(every()) will increment before you get pattern()
 
     // captures the pattern!
-    Pattern(const int seq_count, const unsigned long pattern[], bool now = false)
+    Pattern(const unsigned int seq_count, const unsigned long pattern[], bool now = false)
       : Every{pattern[0], now}, seq_count(seq_count), _pattern(pattern)
     {}
 

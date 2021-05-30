@@ -15,12 +15,13 @@ from rocker_lib import *
 try:
     ensure_logger()
     ensure_zenity()
+    sleep(3)
     while(True):
         ensure_jumper_process()
-        sleep(0.1)
-        ensure_video_process()
         sleep(1)
         ensure_volume_process()
+        sleep(2)
+        ensure_video_process()
         sleep(5)
 except Exception as err:
     print("Startup failed " + str(err))

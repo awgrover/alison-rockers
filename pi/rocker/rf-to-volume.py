@@ -42,7 +42,7 @@ volume = max
 volumeChange = Every( 2.0 / (max-min) ) # take 2 seconds to step down
 
 def setup_gio():
-    # RF signals are high?
+    # RF signals are high
     rf = {}
     rf['A'] = Button(RFA_Pin, pull_up=False)
     rf['B'] = Button(RFB_Pin, pull_up=False)
@@ -77,6 +77,8 @@ while(True):
             log("Sit!")
 
     # on persistance expire, move towards off
+    # (we keep persistance on every time we see a .is_pressed,
+    # so we only do this when ! .is_pressed and the timer expired
     if rf_persistance():
         state = S_RampDown
         print("xState -> {:}".format(state))

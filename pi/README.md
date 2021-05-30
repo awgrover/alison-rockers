@@ -46,6 +46,44 @@ AFTER configuration, capture the image to re-use on the next sd card:
 * Video "yes I can see black border" (aka turn overscan on)
 * VNC server on : for convenience
 * SSH server on
+* bluetooth off
+
+Monitor:
+* hold SHIFT to boot ignoring the boot/config, maybe recover screen use...
+* menu: Raspbery Pi Configuration:Display:Set Resolution
+* CEA is for tv displays, DMT is for computer-displays (projectors, probably?)
+* 1920/1080 is usually safe
+
+Monitor Command Line:
+% tvservice -l
+% tvservice -n
+% tvservice -s
+    what it thinks is attached
+* /boot/config.txt
+    hdmi_group=1 # 1 for CEA, 2 for DMT
+    hdmi_mode=16 # etc
+* have to reboot
+OR
+https://www.raspberrypi.org/forums/viewtopic.php?t=162837#p1055931
+
+    % tvservice -m CEA
+    CEA
+    1   640×480     4:3     60hz    
+    2   720×480 4:3     60hz    
+    4   1280×720        16:9    60hz    
+    16  1920×1080       16:9    60hz    
+    16  1920×1080       16:9    60hz    
+    16  1920×1080       16:9    60hz    
+    % tvservice -m DMT
+    DMT
+    2       480p    4:3     60hz
+    9       800×600 4:3     60hz
+    16      1024×768        4:3     60hz
+    85      1280×720        16:9    60hz
+    35      1280×1024       5:4     60hz
+    51      1600×1200       4:3     60hz
+    82      1920×1080       16:9    60hz    
+
 
 ### Configure vnc server
 
@@ -135,6 +173,10 @@ Confirm that it appears on mDNS: otherwise, later debugging, etc., will be incon
 * use a CAT5 ethernet cable
 * use keyboard/mouse/monitor and operate _from_ the Pi
 * edit the sc-card on your development machine
+
+## Reboot
+
+Reboot, and then don't do anything to the PI! lxpanel seems to go crazy.
 
 ## Correspondance With Rockers
 

@@ -43,7 +43,7 @@ while(True):
         else:
             log("Jumper " + jumper)
             if first_time:
-                alert(jumper)
+                #alert(jumper)
                 print("Jumper " + jumper)
     # don't need to check very often
     sleep(0.1)

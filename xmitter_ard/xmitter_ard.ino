@@ -6,11 +6,11 @@
   If we are power-down, probably won't work, so:
   Press reset button (once) on itsy-bitsy,
   wait for built-in LED
-  then 
-  
-  
-  
-  
+  then
+
+
+
+
   upload immediately
   (startup takes significant time before we get to power-down).
 
@@ -64,37 +64,60 @@ const int SLJumper = 10; // open is A, closed is B
 const int SLJumper_GND = 9; // we set it to low as gnd for jumper, so a jumper can just go between adjacent pins
 
 // Pulse Pattern
-const int TotalPatternLength = 5.5 * 1000;
-const int OnTime = 1000; // minimum reliable
-// leave an OnTime gap for the other to fit in
-// ----____----___...
+// The xmitters inhibit each other,
+// so we need some pattern that deals with collisions,
+// so we see the A&B within every 5 seconds
+// A_A_A_A_A
+// BB__BB__BB
+//=AB__AB__AB # result if A slightly before B
+//=BBA_BBA_ # result if A slightly after B
+
+// A_A_A_A_A
+// _BB__BB__
+//=AB?_AB?
+//=A_B_A_B
+
+// A_A_A_A_A
+// __BB__BB # same as first case
+
+// Make the on time actually: short-off full-on short-off
+// so it is shorter than the full-off time
+const int OffTime = 1000;
+const int OnTimeMargin = 50; // 50 msec either side
+const int OnTime = OffTime - 2 * OnTimeMargin;
+const int MaxPatternLength = 5000; // millis
+
 const int SleepTimeMinQuanta = 16; // watchdog timer min duration
-const int ShortOffTime = OnTime + 40;
-// The second on has to miss A's:
-// ----________----___...
-const int LongOffTime = ShortOffTime + OnTime + 20;
 
 char Which = '?'; // serial/debug: to be filled in with S or L for the off time
-// The pulse pattern, 0's filled in at setup():
-unsigned long BlinkPattern[] = {OnTime, 0, OnTime, 0};
+// The pulse pattern, filled in at setup():
+unsigned long PulsePattern[6]; // 2 offtimes, + 2 ontimes (margin on margin)
 template <typename T, unsigned S> inline unsigned arraysize(const T (&v)[S]) {
   return S;
 };
 
-Every::Pattern Pulsing(arraysize(BlinkPattern), BlinkPattern);
-int ShortOff_I = 1; // to be filled in based on jumper
-int EndOff_I = arraysize(BlinkPattern) - 1; // to be filled in based on jumper
+Every::Pattern Pulsing(arraysize(PulsePattern), PulsePattern);
 
 void serial_wait() {
   // have to wait on usb-serial (or timeout if not connected)
   // Blink while waiting
 
   Timer serial_begin_timeout(2000);
-  unsigned long BlinkPattern[] = {10, 100};
-  Every::Pattern blink(2, BlinkPattern, true);
+  unsigned long serial_blink_pattern[] = {10, 100};
+  Every::Pattern blink(2, serial_blink_pattern, true);
 
   digitalWrite(LED_BUILTIN, LOW);
   while ( ! Serial && ! serial_begin_timeout() ) {
+    if (blink()) digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN) );
+  }
+}
+
+void error_blink() {
+  // hang and blink the error pattern
+  unsigned long error_blink_pattern[] = {200, 10}; // long on
+  Every::Pattern blink(2, error_blink_pattern, true);
+  digitalWrite(LED_BUILTIN, LOW);
+  while ( 1 ) {
     if (blink()) digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN) );
   }
 }
@@ -132,37 +155,51 @@ void setup() {
 
   Serial << "Start\n";
 
-  // Short|Long gap
-  // FIXME: signal which A|B somehow?
+  // Must be even number of entries to be repeatable!
   if (digitalRead(SLJumper)) {
     // high is open, so S
     Which = 'S';
-    BlinkPattern[ShortOff_I] = ShortOffTime;
+    // A_A_A...
+    PulsePattern[0] = OnTimeMargin;
+    PulsePattern[1] = OnTime;
+    PulsePattern[2] = OnTimeMargin + OffTime;
+    PulsePattern[3] = 0;
+    Pulsing.seq_count = 4;
   }
   else {
     Which = 'L';
-    BlinkPattern[ShortOff_I] = LongOffTime;
+    // BB__BB__
+    PulsePattern[0] = OnTimeMargin;
+    PulsePattern[1] = OnTime;
+    PulsePattern[2] = OnTimeMargin * 2;
+    PulsePattern[3] = OnTime;
+    PulsePattern[4] = OnTimeMargin + OffTime * 2;
+    PulsePattern[5] = 0;
+    Pulsing.seq_count = 6;
+  }
+  if (arraysize(PulsePattern) < Pulsing.seq_count) {
+    Serial << "Fail: pattern length ("
+           << Pulsing.seq_count << ") "
+           << "> array size of PulsePattern ("
+           << arraysize(PulsePattern) << ")"
+           << "\n";
   }
 
-  int end_off = TotalPatternLength;
-  for (int i = 0; i < EndOff_I; i++) {
-    end_off -= BlinkPattern[i];
-  }
-  BlinkPattern[EndOff_I] = end_off;
-
-  Serial << "Pattern: " << Which << "\n";
+  Serial << "Pattern: " << Which << "entries " << Pulsing.seq_count << "\n";
   int pattern_sum = 0;
-  for (unsigned int i = 0; i < arraysize(BlinkPattern); i++) {
-    pattern_sum += BlinkPattern[i];
-    Serial << ( i % 2 ? "_" : "-") << BlinkPattern[i] << " ";
+  for (unsigned int i = 0; i < arraysize(PulsePattern); i++) {
+    pattern_sum += PulsePattern[i];
+    Serial << ( i % 2 ? "_" : "-") << PulsePattern[i] << " ";
   }
   Serial << "\n";
+  Serial << "Total " << pattern_sum << "\n";
 
-  if (pattern_sum > TotalPatternLength) {
+  if (pattern_sum > MaxPatternLength) {
+    // just some sanity about it being too long
     Serial << "Fail: pattern ("
            << pattern_sum
-           << ") is longer than TotalPatternLength("
-           << TotalPatternLength
+           << ") is longer than MaxPatternLength("
+           << MaxPatternLength
            << ")\n";
   }
 
@@ -249,25 +286,27 @@ void pulse_sequence(boolean restart) {
     // so we can send out a pulse immediately
     Pulsing.reset();
     if (StandAlone) Serial << millis() - last_change << " RF reset sequence, start []" << Pulsing.sequence() << " 1" << "\n";
-    digitalWrite( Pulse, HIGH); // start high
+    digitalWrite( Pulse, LOW); // start high
     last_change = millis();
   }
 
   if (Pulsing()) {
     digitalWrite( Pulse, ! digitalRead(Pulse) );
-    if (StandAlone) Serial << millis() - last_change << " RF []" << Pulsing.sequence() << " " << digitalRead(Pulse) << "\n";
+    if (StandAlone) Serial << millis() - last_change << " RF []"
+                             << Pulsing.sequence() << " for " << Pulsing.interval << " "
+                             << digitalRead(Pulse) << "\n";
     last_change = millis();
 
     // we can idle/sleep while waiting:
-    unsigned long next_period = BlinkPattern[Pulsing.sequence()];
+    unsigned long next_period = PulsePattern[Pulsing.sequence()];
 
     // assume long periods aren't accuracy important,
     // so let's deep-sleep for long periods
     if (next_period >= 512ul) {
-      if (StandAlone) Serial << "SLEEP for " << next_period << " @" << millis() << "\n";
+      if (StandAlone) Serial << "  SLEEP for " << next_period << " @" << millis() << "\n";
       LowPower.longPowerDown(next_period);
       // USBDevice.attach(); appears to be harmful! I mostly get serial port reconnect w/o!
-      if (StandAlone) Serial << "Wake @" << millis() << "\n";
+      if (StandAlone) Serial << "  Wake @" << millis() << "\n";
       Pulsing.last = millis() - next_period; // force expire, clock doesn't run during powerdown
     }
   }
