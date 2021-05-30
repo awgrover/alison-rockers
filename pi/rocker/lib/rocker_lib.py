@@ -140,7 +140,7 @@ def ensure_zenity():
     if ensure_command_exists('zenity'):
         print("zenity!")
         # initial announce
-        proc = subprocess.Popen(['zenity', '--info', '--text', sys.argv[0]])
+        proc = subprocess.Popen(['zenity', '--info', '--timeout' , '5', '--text', sys.argv[0]])
         atexit.register(close_process, [proc])
     else:
         # Extra complain
