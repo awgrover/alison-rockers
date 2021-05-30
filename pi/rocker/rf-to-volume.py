@@ -20,9 +20,8 @@ from every.every import Every
 
 # pin 2 & 4 are 5v, pin 6 is ground
 # pin 14 is ground
-RFA_Pin = 23 # physical 16
-RFB_Pin = 24 # physical 18
-# pin 20 is ground
+RFA_Pin = 18 # physical 12 rcvr d2
+RFB_Pin = 27 # physical 13 rcvr d3
 
 # one shot timer
 # False the first time it is tested
@@ -45,8 +44,8 @@ volumeChange = Every( 2.0 / (max-min) ) # take 2 seconds to step down
 def setup_gio():
     # RF signals are high?
     rf = {}
-    rf['A'] = Button(RFA_Pin)
-    rf['B'] = Button(RFB_Pin)
+    rf['A'] = Button(RFA_Pin, pull_up=False)
+    rf['B'] = Button(RFB_Pin, pull_up=False)
     return rf
 
 def set_volume(volume):
@@ -70,6 +69,7 @@ while(True):
     # on rf, we'll start to ramp-up, and keep track of rf_persistance
     if rf[which_jumper].is_pressed:
         rf_persistance.start() # reset
+        # has change?
         if state == S_RampDown:
             # new sit'ing
             state = S_RampUp

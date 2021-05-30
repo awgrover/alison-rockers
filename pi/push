@@ -11,4 +11,4 @@ fi
 
 set -x
 ssh $host 'mkdir -p rocker'
-rsync -a rocker/ $host:rocker/
+rsync -a --exclude '**/__pycache__' --exclude '**/.*.sw*' rocker/ $host:rocker/

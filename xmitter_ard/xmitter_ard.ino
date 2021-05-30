@@ -64,12 +64,12 @@ const int SLJumper = 10; // open is A, closed is B
 const int SLJumper_GND = 9; // we set it to low as gnd for jumper, so a jumper can just go between adjacent pins
 
 // Pulse Pattern
-const int TotalPatternLength = 4 * 1000; // 4 seconds
-const int OnTime = 400; // minimum reliable
+const int TotalPatternLength = 5.5 * 1000;
+const int OnTime = 1000; // minimum reliable
 // leave an OnTime gap for the other to fit in
 // ----____----___...
 const int SleepTimeMinQuanta = 16; // watchdog timer min duration
-const int ShortOffTime = OnTime + 20;
+const int ShortOffTime = OnTime + 40;
 // The second on has to miss A's:
 // ----________----___...
 const int LongOffTime = ShortOffTime + OnTime + 20;
@@ -263,7 +263,7 @@ void pulse_sequence(boolean restart) {
 
     // assume long periods aren't accuracy important,
     // so let's deep-sleep for long periods
-    if (next_period > 1000ul) {
+    if (next_period >= 512ul) {
       if (StandAlone) Serial << "SLEEP for " << next_period << " @" << millis() << "\n";
       LowPower.longPowerDown(next_period);
       // USBDevice.attach(); appears to be harmful! I mostly get serial port reconnect w/o!

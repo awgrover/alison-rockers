@@ -16,7 +16,7 @@ A raspberry PI runs a video, responds to the RF signal to control the sound.
 
 ## Pi
 
-I choose to use raspberry pi 3 B+. This does require a micro-hdmi to standard HDMI adapter.
+I chose to use raspberry pi 3 B+. This has a standard HDMI adapter.
 
 ## Pi-OS Configuration
 
@@ -27,6 +27,17 @@ Use the standard raspbian OS, image install on a SD Card. I choose a 32GB card t
 * I assume 'lxterminal' opens a GUI terminal window
 * I assume `pactl` for pulse-audio volume control.
 * I assume `zenity` for alerts/status
+
+% image=~/Downloads/2021-03-04-raspios-buster-armhf-full.img
+To find the sd-card device:
+% lsblk -p
+...something like /dev/mmcblk0
+% sdcard=/dev/mmcblk0
+Copy image:
+% sudo dd status=progress if=$image of=$sdcard bs=4M conv=fsync
+
+AFTER configuration, capture the image to re-use on the next sd card:
+% sudo dd if=$sdcard of=2021-03-04-raspios-buster-armhf-full-alison.img
 
 ### 1st Boot Configuration
 
@@ -52,10 +63,13 @@ We want videos to play without screen-saver activating.
 
 ## Configure SSH
 
+* set hostname
+    hostname alisona
+
 It does the reverse-dns lookup, which we don't care about and wastes time.
 
 * Edit /etc/ssh/sshd_config
-    useDNS no
+    UseDNS no
 
 ## Enable mDNS
 
@@ -65,11 +79,16 @@ it's appearence on the local network.
 
 * Edit /etc/avahi/avahi-daemon.conf
     # this makes any hostname.local refer to hosts on your lan reachable via mdns
+    hostname=alisona
     domain-name=local
     # they are apparently turned off as default, i'd guess for privacy / security reasons
     # this broadcast your hostname and hostinfo on the lan via mdns
     publish-hinfo=yes
     publish-workstation=yes
+
+* Disable automatic apt-get updates
+systemctl mask apt-daily.service
+systemctl mask apt-daily-upgrade.service
 
 ## Additional Packages
 
@@ -82,19 +101,21 @@ Setup your ssh to access alisona.local, and alisonb.local
 ## Application Code
 
 Copy the rocker/ directory to the raspberry pi:
-    scp -pr rocker/ alisona.local:~/pi/rocker
+    pi=alisona.local
+    cd pi
+    rsync -a --exclude '**/__pycache__' --exclude '**/.*.sw*'  --progress -n rocker/ $pi:~/rocker
 
 ## Init, aka Startup
 
 Edit /etc/xdg/lxsession/LXDE/autostart
-   @python3 /home/pi/rocker/startup.py > /home/pi/rocker/log/startup.log 2>&1
+   @python3 /home/rocker/startup.py > /home/rocker/log/startup.log 2>&1
 
 .....
 
 
 ## Videos
 
-Place 2 videos in ~/pi/rocker:
+Place 2 videos in ~/rocker:
 
 * The "A" video should be named "A-*", i.e. starts with "A-"
 * The "B" video should be named "B-*", i.e. starts with "B-"
@@ -131,6 +152,12 @@ keyfob -> pi-receiver + pi-jumper -> pi-video
 
 Refer to <this image> to designate the Pi as "A" vs "B". When the jumper is on pins 37&XX, the
 pi is designated as "B", otherwise as "A".
+
+Testing:
+
+    export DISPLAY=:0
+    cd ~/rocker
+    ./jumper-reader.py
 
 ## Receiver Wiring
 

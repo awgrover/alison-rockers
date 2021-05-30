@@ -56,6 +56,8 @@ struct bins {
   unsigned long last_millis = 0;
   boolean low = 1; // to track rising edge
   unsigned long ct[bins_ct_ct];
+  unsigned long missed;
+  Every expected = Every(5000); // our "persistance" at receiver
 };
 bins detection[data_ct]; // should all be zero
 
@@ -63,17 +65,22 @@ void loop_reliability() {
   // 0:  0 146 9 138 64 0 0 0 1 0 0
   // 1: 146 6 1 153 60
   // + 69 in about 5 minutes
-  
+
   boolean any = 0;
   static Every count_elapsed(30 * 1000, true);
   static float minutes = 0.0;
-
 
   for (int rf_pin = data_0; rf_pin < data_0 + data_ct; rf_pin++) {
     int rf_i = rf_pin - data_0; // 0...n
     int v = digitalRead(rf_pin);
     boolean hit = v >= threshold;
 
+    if ( detection[rf_i].expected() ) {
+      detection[rf_i].missed += 1;
+      detection[rf_i].expected.reset();
+      if (rf_i <= 1) Serial << "Missed " << rf_i << " " << detection[rf_i].missed << "\n";
+    }
+    
     if (hit) {
       if (count_elapsed()) {
         minutes = minutes + 0.5;
@@ -89,11 +96,13 @@ void loop_reliability() {
         if (bin_number > bins_ct_ct - 1) bin_number = bins_ct_ct - 1;
         detection[rf_i].ct[ bin_number ] += 1;
         detection[rf_i].last_millis = millis();
+        detection[rf_i].expected.reset();
 
         Serial << rf_i << ": ";
         for (int i = 0; i < bins_ct_ct; i++) {
           Serial << detection[rf_i].ct[i] << " ";
         }
+        Serial << "x " << detection[rf_i].missed;
         Serial << "\n";
       }
     }

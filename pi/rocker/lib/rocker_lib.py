@@ -109,6 +109,7 @@ def ab_jumpers():
     if not ('ab_jumpers_last_error' in globals()):
         ab_jumpers_last_error = None
 
+    j=None
     if ab_jumpers_interval():
         try:
             with open(JumperFile,mode='r') as f:
@@ -119,6 +120,10 @@ def ab_jumpers():
                     log("Jumper " + ab_jumpers_last)
                     print("Jumper " + ab_jumpers_last)
                 ab_jumpers_last = j
+
+        except FileNotFoundError as err:
+            print("First time for " + JumperFile)
+            ab_jumpers_last = 'A' # might as well default to something
 
         except (AttributeError, ValueError, FileNotFoundError) as err: # None does AttributeError
             if str(err) != str(ab_jumpers_last_error):
