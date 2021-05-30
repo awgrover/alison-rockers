@@ -12,6 +12,8 @@ from time import sleep
 import sys; sys.path.append('lib')
 from rocker_lib import *
 
+sleep(5)
+
 try:
     ensure_logger()
     ensure_zenity()

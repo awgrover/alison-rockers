@@ -145,9 +145,10 @@ Copy the rocker/ directory to the raspberry pi:
 
 ## Init, aka Startup
 
-Edit /etc/xdg/lxsession/LXDE/autostart
-rather: ~/.config/lxsession/LXDE/autostart
-   @python3 /home/rocker/startup.py > /home/rocker/log/startup.log 2>&1
+% mkdir -p ~/.config/lxsession/LXDE-pi
+% cp /etc/xdg/lxsession/LXDE-pi/autostart ~/.config/lxsession/LXDE-pi/autostart
+Add:
+    @/home/pi/rocker/startup.sh
 
 .....
 
@@ -178,6 +179,9 @@ Confirm that it appears on mDNS: otherwise, later debugging, etc., will be incon
 ## Reboot
 
 Reboot, and then don't do anything to the PI! lxpanel seems to go crazy.
+
+Maybe `lxpanelctl restart` to fix?
+
 
 ## Correspondance With Rockers
 
