@@ -10,40 +10,27 @@ import time
 import sys; sys.path.append('lib')
 from rocker_lib import *
 
-# features we need: zenity
 # detect setup: wait till ready, change detect
 # show black-background, start video
 # ensure video
 
-import select
-def std_available(message):
-    # read 1 char from stdin
-    # non-blocking, but you  have to EOL to send input
-    global first_time
-    if not ('first_time' in globals()):
-        first_time = True
-    if first_time:
-        first_time = False
-        print(message)
-
-    return sys.stdin.isatty() and select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
-
-def react_ab_jumpers(buttons, action, *more):
-    # read jumpers
+def react_ab_jumpers(action, *more):
+    # read a|b-jumper
     # call action(A|B) w/ changed
     # return current jumper
     global react_ab_jumpers_last
     if not ('react_ab_jumpers_last' in globals()):
         react_ab_jumpers_last = 0
     
-    which = ab_jumper()
+    which = ab_jumpers()
     
     changed = False
     if which != react_ab_jumpers_last:
         print("Changed to '{:}'".format(which))
-        react_ab_jumpers_last=which
+        react_ab_jumpers_last = which
         changed = True
 
+    # with current (despite beling called ...last)
     action(changed, react_ab_jumpers_last, *more)
 
     return react_ab_jumpers_last
@@ -96,13 +83,6 @@ def run_video(changed, which_jumper, videos): # a react_ab_jumpers() fn
             log("Video unexpectedly stopped for {:}".format(which_jumper))
             running = _run_video(run_video_procs, which_jumper, videos)
 
-from gpiozero import Button
-def setup_gpio():
-    buttons = {}
-    buttons['A'] = Button(APin)
-    buttons['B'] = Button(BPin)
-    return buttons
-
 def _run_video(procs, which_jumper, videos):
     # cleanup
     for p in procs:
@@ -138,10 +118,9 @@ log("Start")
 
 ensure_zenity()
 try:
-    buttons = setup_gpio()
     videos = ensure_video_files()
     while(True):
-        react_ab_jumpers( buttons, run_video, videos )
+        react_ab_jumpers( run_video, videos )
         time.sleep(0.2)
 except Exception as err:
     log("Crashed: {:}".format(err))

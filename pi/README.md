@@ -158,6 +158,12 @@ Testing:
     export DISPLAY=:0
     cd ~/rocker
     ./jumper-reader.py
+    # test a/b
+
+    ./run-video.py
+    # should have a black screen behind video (esc for full-screen..)
+    # test sound in avjack & projector
+    # test a/b change
 
 ## Receiver Wiring
 
