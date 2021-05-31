@@ -47,12 +47,14 @@ AFTER configuration, capture the image to re-use on the next sd card:
 * VNC server on : for convenience
 * SSH server on
 * bluetooth off
+* 
 
 Monitor:
 * hold SHIFT to boot ignoring the boot/config, maybe recover screen use...
 * menu: Raspbery Pi Configuration:Display:Set Resolution
 * CEA is for tv displays, DMT is for computer-displays (projectors, probably?)
 * 1920/1080 is usually safe
+* Change gpu-memory to ~128 they say...
 
 Monitor Command Line:
 % tvservice -l
@@ -150,8 +152,16 @@ Copy the rocker/ directory to the raspberry pi:
 Add:
     @/home/pi/rocker/startup.sh
 
-.....
+## lxpanel
 
+lxpanel will periodically go to 100% cpu and stall the system.
+It seems to work to kill lxpanel while running, 
+though that impairs regaining control of the GUI.
+Supposedly,
+    lxpanelctl restart
+will restart it, but I have poor results with that.
+
+A flag-file: ~/leave-lxpanel will inhibit the killing at boot.
 
 ## Videos
 
@@ -179,9 +189,6 @@ Confirm that it appears on mDNS: otherwise, later debugging, etc., will be incon
 ## Reboot
 
 Reboot, and then don't do anything to the PI! lxpanel seems to go crazy.
-
-Maybe `lxpanelctl restart` to fix?
-
 
 ## Correspondance With Rockers
 

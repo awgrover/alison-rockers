@@ -10,11 +10,18 @@
 from time import sleep
 
 import sys; sys.path.append('lib')
+from pathlib import Path
+import subprocess
 from rocker_lib import *
+
+def kill_lxpanel():
+    if not Path("/home/pi/leave-lxpanel").exists:
+       subprocess.run(['killall', '--signal', 'HUP', 'lxpanel'], stdout=subprocess.DEVNULL)
 
 sleep(5)
 
 try:
+    kill_lxpanel()
     ensure_logger()
     ensure_zenity()
     sleep(3)
