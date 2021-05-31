@@ -16,7 +16,7 @@ from rocker_lib import *
 
 def kill_lxpanel():
     if not Path("/home/pi/leave-lxpanel").exists():
-       subprocess.run(['killall', '--signal', 'HUP', 'lxpanel'], stdout=subprocess.DEVNULL)
+       subprocess.run(['killall', '--signal', 'SIGTERM', 'lxpanel'], stdout=subprocess.DEVNULL)
 
 if Path("/home/pi/no-rocker").exists():
     print("no-rocker!")
