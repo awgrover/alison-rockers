@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+pidof startup.py | xargs kill -HUP startup.py
+processes=`find ~/rocker -maxdepth 1  -name '*.py' | xargs -n 1 basename | sed 's/\.py//'`
+pidof `processes` | xargs kill -HUP
+killall --signal HUP omxplayer
+killall --signal HUP mirage

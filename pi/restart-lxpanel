@@ -1,0 +1,3 @@
+# assuming you've kilall'd it
+# Otherwise, try lxpanelctl restart
+lxpanel --profile LXDE-pi

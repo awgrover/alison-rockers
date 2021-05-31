@@ -1,2 +1,2 @@
 cd ~/rocker
-exec python3 startup.py
+exec -a startup.py python3 startup.py

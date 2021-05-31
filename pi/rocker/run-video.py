@@ -105,7 +105,13 @@ def _run_video(procs, which_jumper, videos):
         time.sleep(2)
         log("Play " + videos[which_jumper])
         procs.append(
-            subprocess.Popen(['cvlc', '--quiet', '--no-video-title', '--loop', '-f', videos[which_jumper]], stderr=subprocess.DEVNULL, close_fds=True)
+            # -o alsa enables use of pactl, and respects the audio-output selection
+            subprocess.Popen(
+                ['omxplayer', '--no-keys', '--loop', '--no-osd', '-o', 'alsa', videos[which_jumper]],
+                stderr=subprocess.DEVNULL, close_fds=True
+                )
+            # vlc was crashing on the coal movie
+            # subprocess.Popen(['cvlc', '--quiet', '--no-video-title', '--loop', '-f', videos[which_jumper]], stderr=subprocess.DEVNULL, close_fds=True)
             )
 
         return procs[-1]
