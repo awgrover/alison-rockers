@@ -4,6 +4,8 @@ ps ax | grep $$
 set -e
 if [[ "$1" == 'a' || "$1" == 'b' ]]; then
     host=alison$1.local
+elif [[ "$1" == 'awg' ]]; then
+    host=raspberrypi-awg.local
 else
     echo "need a|b"
     exit 1

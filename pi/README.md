@@ -58,7 +58,7 @@ Monitor:
 * hold SHIFT to boot ignoring the boot/config, maybe recover screen use...
 * menu: Raspbery Pi Configuration:Display:Set Resolution
 * CEA is for tv displays, DMT is for computer-displays (projectors, probably?)
-* 1920/1080 is usually safe
+* 1920/1080 is usually safe (60hz)
 * Change gpu-memory to ~128 they say...
 
 Monitor Command Line:
@@ -207,7 +207,7 @@ Confirm that it appears on mDNS: otherwise, later debugging, etc., will be incon
 
 ## Reboot
 
-Reboot, and then don't do anything to the PI! lxpanel seems to go crazy.
+Reboot, and then don't do anything to the PI! Should start the correct video
 
 ## Correspondance With Rockers
 
