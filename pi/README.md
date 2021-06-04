@@ -33,11 +33,16 @@ To find the sd-card device:
 % lsblk -p
 ...something like /dev/mmcblk0
 % sdcard=/dev/mmcblk0
-Copy image:
+Copy image to sdcard:
 % sudo dd status=progress if=$image of=$sdcard bs=4M conv=fsync
 
 AFTER configuration, capture the image to re-use on the next sd card:
-% sudo dd if=$sdcard of=2021-03-04-raspios-buster-armhf-full-alison.img
+% sudo dd status=progress bs=4M conv=fsync if=$sdcard of=`pwd`/configured-2021-03-04-raspios-buster-armhf-full-alison.img
+
+Then, the only change necessary is to set the /etc/hostname to alisonb
+* pull/insert sd-card. shoult mount on /media/awgrover/...
+% sudo vi /media/awgrover/../etc/hostname
+    change to alisonb
 
 ### 1st Boot Configuration
 
@@ -119,7 +124,7 @@ it's appearence on the local network.
 
 * Edit /etc/avahi/avahi-daemon.conf
     # this makes any hostname.local refer to hosts on your lan reachable via mdns
-    hostname=alisona
+    #hostname=alisona # don't set, do % hostname
     domain-name=local
     # they are apparently turned off as default, i'd guess for privacy / security reasons
     # this broadcast your hostname and hostinfo on the lan via mdns
@@ -232,6 +237,11 @@ Testing:
     # should have a black screen behind video (esc for full-screen..)
     # test sound in avjack & projector
     # test a/b change
+
+    Turn off projector
+    reboot pi
+    turn on projector
+    ? displays?
 
 ## Receiver Wiring
 

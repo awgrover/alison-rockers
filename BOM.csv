@@ -26,7 +26,7 @@ Quantity,Vendor,Description,product-number,$ each
 1,Digikey,Raspberry PI 3B+,1690-1014-ND,43.29
 1,Digikey,AC/DC WALL MNT ADAPTER 5.1V 13W (usb micro),1690-1021-ND,13.40
 1,Digikey,16GB 3D SD CARD (preloaded),3247-SDCOEM-16GB-ND,9.82
-1,Adafruit,Simple RF M4 Receiver - 315MHz Momentary,1391,4.95
+1,Adafruit,Simple RF M4 Receiver - 315MHz Momentary "R02A",1391,4.95
 1,Digikey,0.1" jumper,,0.10
 1,alan,raspberry pi code,https://github.com/awgrover/alison-rockers/tree/main/pi
 
