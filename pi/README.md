@@ -152,7 +152,17 @@ Copy the rocker/ directory to the raspberry pi:
 Add:
     @/home/pi/rocker/startup.sh
 
+## logrotate
+
+% sudo cp ~/rocker/logrotate-rocker /etc/logrotate.d
+
+1M, then compress, up to 100 of them.
+
+Preserved for statistics of "Sit" vs "Stand".
+
 ## lxpanel
+
+I kill lxpanel in startup.py.
 
 lxpanel will periodically go to 100% cpu and stall the system.
 It seems to work to kill lxpanel while running, 

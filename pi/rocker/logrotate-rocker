@@ -1,0 +1,7 @@
+/home/pi/rocker/log/rocker.log {
+        create 660 pi pi
+        compress
+        dateext
+        size 1M
+        rotate 100
+}
