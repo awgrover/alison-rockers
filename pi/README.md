@@ -131,6 +131,8 @@ it's appearence on the local network.
     publish-hinfo=yes
     publish-workstation=yes
 
+    % sudo service avahi-daemon restart
+
 * Disable automatic apt-get updates
 systemctl mask apt-daily.service
 systemctl mask apt-daily-upgrade.service
@@ -148,7 +150,7 @@ Setup your ssh to access alisona.local, and alisonb.local
 Copy the rocker/ directory to the raspberry pi:
     pi=alisona.local
     cd pi
-    rsync -a --exclude '**/__pycache__' --exclude '**/.*.sw*'  --progress -n rocker/ $pi:~/rocker
+    rsync -a --exclude '**/__pycache__' --exclude '**/.*.sw*'  --progress rocker/ $pi:~/rocker
 
 ## Init, aka Startup
 

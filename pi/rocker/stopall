@@ -1,7 +1,7 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 set -x
-pidof startup.py | xargs kill -HUP
+pidof startup.py | xargs kill -TERM
 processes=`find ~/rocker -maxdepth 1  -name '*.py' | xargs -n 1 basename | sed 's/\.py//'`
 pidof $processes | xargs --no-run-if-empty kill -HUP
 killall --signal HUP omxplayer /usr/bin/omxplayer.bin
