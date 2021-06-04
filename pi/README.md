@@ -160,6 +160,10 @@ Add:
 
 Preserved for statistics of "Sit" vs "Stand".
 
+## crontab/reboot
+
+% (crontab -l; echo '30 01 * * * sudo reboot') | crontab -
+
 ## lxpanel
 
 I kill lxpanel in startup.py.
