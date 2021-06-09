@@ -52,7 +52,7 @@ Then, the only change necessary is to set the /etc/hostname to alisonb
 * VNC server on : for convenience
 * SSH server on
 * bluetooth off
-* 
+* rasp pi config: display: screen-blanking: disable
 
 Monitor:
 * hold SHIFT to boot ignoring the boot/config, maybe recover screen use...
@@ -244,6 +244,9 @@ Testing:
     reboot pi
     turn on projector
     ? displays?
+
+## Regaining control of PI
+Place a jumper across 26/20 (physical 37/38, next to last set of pins). That should drop out of startup.py.
 
 ## Receiver Wiring
 
